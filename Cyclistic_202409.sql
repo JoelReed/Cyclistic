@@ -1,165 +1,190 @@
 -- Select all our bike trip records for Sep 2024
-  
-  SELECT *
-  FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata];
 
-  -- Check for duplicates
+SELECT *
+FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata];
 
-  SELECT ride_id, COUNT(*) AS DuplicateCount
-   FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-   GROUP BY ride_id
-   HAVING COUNT(*) > 1;
+ -- Check for duplicates
 
-  --  Update our columns with our preferred naming conventions
-  
-  sp_rename '[Cyclistic].[dbo].[202409-cyclistic-tripdata].ride_id', 'trip_id', 'COLUMN';
-  sp_rename '[Cyclistic].[dbo].[202409-cyclistic-tripdata].rideable_type', 'bike_type', 'COLUMN';
-  sp_rename '[Cyclistic].[dbo].[202409-cyclistic-tripdata].started_at', 'start_time', 'COLUMN';
-  sp_rename '[Cyclistic].[dbo].[202409-cyclistic-tripdata].ended_at', 'end_time', 'COLUMN';
-  sp_rename '[Cyclistic].[dbo].[202409-cyclistic-tripdata].member_casual', 'user_type', 'COLUMN';
+SELECT ride_id,
+       COUNT(*) AS DuplicateCount
+FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+GROUP BY ride_id HAVING COUNT(*) > 1;
 
-   -- Count every row where we have a null value within the station information
+ --  Update our columns with our preferred naming conventions
+ sp_rename '[Cyclistic].[dbo].[202409-cyclistic-tripdata].ride_id',
+           'trip_id',
+           'COLUMN';
 
-  SELECT COUNT(*)
+ sp_rename '[Cyclistic].[dbo].[202409-cyclistic-tripdata].rideable_type',
+           'bike_type',
+           'COLUMN';
 
-  FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+ sp_rename '[Cyclistic].[dbo].[202409-cyclistic-tripdata].started_at',
+           'start_time',
+           'COLUMN';
 
-  WHERE (start_time is NULL) OR (end_time is NULL) OR (start_station_name is NULL) OR (end_station_name is NULL) OR (start_station_id is NULL) OR (end_station_id is NULL) OR (start_lat is NULL) OR (start_lng is NULL) OR (end_lat is NULL) OR (end_lng is NULL);
+ sp_rename '[Cyclistic].[dbo].[202409-cyclistic-tripdata].ended_at',
+           'end_time',
+           'COLUMN';
 
-   -- Delete and remove the null rows from our dataset
-  
-  DELETE FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+ sp_rename '[Cyclistic].[dbo].[202409-cyclistic-tripdata].member_casual',
+           'user_type',
+           'COLUMN';
 
-  WHERE (start_time is NULL) OR (end_time is NULL) OR (start_station_name is NULL) OR (end_station_name is NULL) OR (start_station_id is NULL) OR (end_station_id is NULL) OR (start_lat is NULL) OR (start_lng is NULL) OR (end_lat is NULL) OR (end_lng is NULL);
+ -- Count every row where we have a null value within the station information
 
-  -- Add two new columns, as per our stakeholder instruction
+SELECT COUNT(*)
+FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+WHERE (start_time IS NULL)
+  OR (end_time IS NULL)
+  OR (start_station_name IS NULL)
+  OR (end_station_name IS NULL)
+  OR (start_station_id IS NULL)
+  OR (end_station_id IS NULL)
+  OR (start_lat IS NULL)
+  OR (start_lng IS NULL)
+  OR (end_lat IS NULL)
+  OR (end_lng IS NULL);
 
-  -- Add a ride length column as TIME
+ -- Delete and remove the null rows from our dataset
 
-  ALTER TABLE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-  ADD ride_length TIME;
+DELETE
+FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+WHERE (start_time IS NULL)
+  OR (end_time IS NULL)
+  OR (start_station_name IS NULL)
+  OR (end_station_name IS NULL)
+  OR (start_station_id IS NULL)
+  OR (end_station_id IS NULL)
+  OR (start_lat IS NULL)
+  OR (start_lng IS NULL)
+  OR (end_lat IS NULL)
+  OR (end_lng IS NULL);
 
-   -- Add a day of the week column. Our days of the week will be presented as strings, so we'll use NVARCHAR
+ -- Add two new columns, as per our stakeholder instruction
+ -- Add a ride length column as TIME
 
-  ALTER TABLE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-  ADD day_of_week NVARCHAR(20);
+ALTER TABLE [Cyclistic].[dbo].[202409-cyclistic-tripdata] ADD ride_length TIME;
 
-   -- Calculate the ride_length for each journey and populate the newly created column
+ -- Add a day of the week column. Our days of the week will be presented as strings, so we'll use NVARCHAR
 
-  UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-  SET ride_length = CONVERT(TIME, DATEADD(SECOND, DATEDIFF(SECOND, start_time, end_time), '00:00:00'));
+ALTER TABLE [Cyclistic].[dbo].[202409-cyclistic-tripdata] ADD day_of_week NVARCHAR(20);
 
-  -- Look for any negative duration journeys in our data, i.e., end time is less than the start time
+ -- Calculate the ride_length for each journey and populate the newly created column
 
-  SELECT * 
+UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+SET ride_length = CONVERT(TIME, DATEADD(SECOND, DATEDIFF(SECOND, start_time, end_time), '00:00:00'));
 
-  FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+ -- Look for any negative duration journeys in our data, i.e., end time is less than the start time
 
-  WHERE end_time < start_time;
+SELECT *
+FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+WHERE end_time < start_time;
 
-  -- Delete those negative journeys from the table as we can't use them. Number of rows are now 184,735
+ -- Delete those negative journeys from the table as we can't use them. Number of rows are now 184,735
 
-  DELETE FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-
-  WHERE end_time < start_time;
+DELETE
+FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+WHERE end_time < start_time;
 
  -- Populate our day_of_the_week column
 
-  UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-  SET day_of_week = DATENAME(WEEKDAY, start_time);
+UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+SET day_of_week = DATENAME(WEEKDAY, start_time);
 
-  -- Create two further custom columns to show the time of day and season of year.
+ -- Create two further custom columns to show the time of day and season of year.
 
-  ALTER TABLE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-  ADD time_of_day NVARCHAR(20);
+ALTER TABLE [Cyclistic].[dbo].[202409-cyclistic-tripdata] ADD time_of_day NVARCHAR(20);
 
-  ALTER TABLE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-  ADD season_of_year NVARCHAR(20);
 
-   -- Populate our time_of_day column using CASE (IF/ELSE)
+ALTER TABLE [Cyclistic].[dbo].[202409-cyclistic-tripdata] ADD season_of_year NVARCHAR(20);
 
-  UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-    SET time_of_day = 
-      CASE 
-        WHEN DATEPART(HOUR, start_time) BETWEEN 6 AND 11 THEN 'Morning'
-        WHEN DATEPART(HOUR, start_time) BETWEEN 12 AND 17 THEN 'Afternoon'
-        WHEN DATEPART(HOUR, start_time) BETWEEN 18 AND 21 THEN 'Evening'
-        ELSE 'Night' -- Covers 22:00 - 05:59
-    END;
+ -- Populate our time_of_day column using CASE (IF/ELSE)
 
-	-- Populate our season_of_year column using CASE (IF/ELSE)
+UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+SET time_of_day = CASE
+                      WHEN DATEPART(HOUR, start_time) BETWEEN 6 AND 11 THEN 'Morning'
+                      WHEN DATEPART(HOUR, start_time) BETWEEN 12 AND 17 THEN 'Afternoon'
+                      WHEN DATEPART(HOUR, start_time) BETWEEN 18 AND 21 THEN 'Evening'
+                      ELSE 'Night' -- Covers 22:00 - 05:59
 
-	UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-      SET season_of_year =
-       CASE 
-          WHEN MONTH(start_time) IN (3, 4, 5) THEN 'Spring'
-          WHEN MONTH(start_time) IN (6, 7, 8) THEN 'Summer'
-          WHEN MONTH(start_time) IN (9, 10, 11) THEN 'Fall'
-          WHEN MONTH(start_time) IN (12, 1, 2) THEN 'Winter'
-      END;
+                  END;
 
-	   -- Trim our NVARCHAR columns to tidy these all up
+ -- Populate our season_of_year column using CASE (IF/ELSE)
 
-	  UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-       SET start_station_name = TRIM(start_station_name);
+UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+SET season_of_year = CASE
+                         WHEN MONTH(start_time) IN (3,
+                                                    4,
+                                                    5) THEN 'Spring'
+                         WHEN MONTH(start_time) IN (6,
+                                                    7,
+                                                    8) THEN 'Summer'
+                         WHEN MONTH(start_time) IN (9,
+                                                    10,
+                                                    11) THEN 'Fall'
+                         WHEN MONTH(start_time) IN (12,
+                                                    1,
+                                                    2) THEN 'Winter'
+                     END;
 
-	  UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-       SET end_station_name = TRIM(end_station_name);
+ -- Trim our NVARCHAR columns to tidy these all up
 
-	  UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-       SET start_station_id = TRIM(start_station_id);
+UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+SET start_station_name = TRIM(start_station_name);
 
-	  UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-       SET end_station_id = TRIM(end_station_id);
 
-	   -- Check for issues with our bike_type column
+UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+SET end_station_name = TRIM(end_station_name);
 
-	    SELECT *
 
-	    FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+SET start_station_id = TRIM(start_station_id);
 
-	    WHERE (bike_type <> 'classic_bike') AND (bike_type <> 'electric_bike') AND (bike_type <> 'electric_scooter');
 
-	-- Check for issues with our user_type column
+UPDATE [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+SET end_station_id = TRIM(end_station_id);
 
-	    SELECT *
+ -- Check for issues with our bike_type column
 
-	    FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+SELECT *
+FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+WHERE (bike_type <> 'classic_bike')
+  AND (bike_type <> 'electric_bike')
+  AND (bike_type <> 'electric_scooter');
 
-	    WHERE (user_type <> 'casual') AND (user_type <> 'member');
+ -- Check for issues with our user_type column
 
-	   -- Find really long rides (over 3 hours)
+SELECT *
+FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+WHERE (user_type <> 'casual')
+  AND (user_type <> 'member');
 
-	   SELECT *
+ -- Find really long rides (over 3 hours)
 
-	   FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+SELECT *
+FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+WHERE ride_length > '03:00:00'
+ORDER BY ride_length DESC;
 
-	   WHERE ride_length > '03:00:00'
-	   
-	   ORDER BY ride_length DESC;
+ -- Find really short rides (under 60 seconds) where the start and end station is the same, i.e.,
 
-	  -- Find really short rides (under 60 seconds) where the start and end station is the same, i.e., 
+SELECT *
+FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+WHERE (ride_length < '00:01:00')
+  AND (start_station_name = end_station_name)
+ORDER BY ride_length ASC;
 
-	   SELECT *
+ -- Find really short rides (under 60 seconds)
 
-	   FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+SELECT *
+FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+WHERE (ride_length < '00:01:00')
+ORDER BY ride_length DESC;
 
-	   WHERE (ride_length < '00:01:00') AND (start_station_name = end_station_name)
-	   
-	   ORDER BY ride_length ASC;
+ -- Delete short rides
 
-	  -- Find really short rides (under 60 seconds)
-	   
-	   SELECT *
+DELETE
+FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
+WHERE (ride_length < '00:01:00');
 
-	   FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-
-	   WHERE (ride_length < '00:01:00')
-	   
-	   ORDER BY ride_length DESC;
-
-	   -- Delete short rides
-
-	   DELETE FROM [Cyclistic].[dbo].[202409-cyclistic-tripdata]
-
-	   WHERE (ride_length < '00:01:00');
